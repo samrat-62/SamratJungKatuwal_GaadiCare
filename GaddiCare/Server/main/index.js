@@ -1,14 +1,18 @@
-import express from "express";
-import bodyParser from "body-parser";
-import config from "../../../src/config/config.js";
-import connectionDB from "./database/database.js";
+import express from 'express';
+import http from 'http';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 
-connectionDB();
+const PORT = process.env.PORT || 8000;
 
-app.use(bodyParser.json());
+app.get('/', (req, res) => {
+    res.send('Hello, World!');
+});
 
-app.listen(config.port, ()=>{
-    console.log(`Server is running at port ${config.port}.....`);
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
