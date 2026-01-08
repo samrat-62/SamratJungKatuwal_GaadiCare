@@ -1,7 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-import config from "./config/config.js";
-import connectionDB from "./config/database.js";
+import config from "../../../src/config/config.js";
+import connectionDB from "./database/database.js";
 
 const app = express();
 
