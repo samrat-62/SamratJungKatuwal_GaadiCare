@@ -1,6 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "description": "",
   "main": "./main/index.js",
   "scripts": {
     "dev": "node --watch ./main/index.js",
@@ -8,13 +9,18 @@
   },
   "keywords": [],
   "author": "",
-  "type": "module",
   "license": "ISC",
-  "description": "",
+  "type": "module",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "mongoose": "^9.1.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.0.2",
+    "nodemailer": "^7.0.12",
+    "uuid": "^13.0.0",
     "validator": "^13.15.26"
   }
 }
