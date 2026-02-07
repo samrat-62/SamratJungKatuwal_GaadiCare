@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../../models/user.js";
+import Workshop from "../../models/workshop.js";
 
 const updatePassword = async (req, res) => {
   const { email, newPassword } = req.body;
@@ -11,24 +12,32 @@ const updatePassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    let account = await User.findOne({ email });
+    let accountType = "user";
 
-    if (!user) {
+    if (!account) {
+      account = await Workshop.findOne({ email });
+      accountType = "workshop";
+    }
+
+    if (!account) {
       return res.status(404).json({
-        message: "User not found.",
+        message: "Account not found.",
       });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    user.password = hashedPassword;
-    user.verifyCode = undefined;
-    user.codeExpire = undefined;
+    account.password = hashedPassword;
+    account.verifyCode = undefined;
+    account.codeExpire = undefined;
 
-    await user.save();
+    await account.save();
 
     return res.status(200).json({
+      success: true,
       message: "Password updated successfully.",
+      accountType,
     });
   } catch (error) {
     console.error("Update password error:", error);

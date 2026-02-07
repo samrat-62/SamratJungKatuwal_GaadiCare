@@ -1,4 +1,5 @@
 import User from "../../models/user.js";
+import Workshop from "../../models/workshop.js";
 
 const verifyForgotPasswordToken = async (req, res) => {
   const { email, token } = req.body;
@@ -10,35 +11,42 @@ const verifyForgotPasswordToken = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    let account = await User.findOne({ email });
+    let accountType = "user";
 
+    if (!account) {
+      account = await Workshop.findOne({ email });
+      accountType = "workshop";
+    }
 
-    if (!user) {
+    if (!account) {
       return res.status(404).json({
-        message: "User not found.",
+        message: "Account not found.",
       });
     }
 
-    if (!user.verifyCode || !user.codeExpire) {
+    if (!account.verifyCode || !account.codeExpire) {
       return res.status(400).json({
         message: "No reset request found.",
       });
     }
 
-    if (user.verifyCode !== token) {
+    if (account.verifyCode !== token) {
       return res.status(400).json({
         message: "Invalid reset code.",
       });
     }
 
-    if (user.codeExpire < new Date()) {
+    if (account.codeExpire < new Date()) {
       return res.status(400).json({
         message: "Reset code has expired.",
       });
     }
 
     return res.status(200).json({
+      success: true,
       message: "Reset code verified successfully.",
+      accountType,
     });
   } catch (error) {
     console.error("Verify forgot password token error:", error);

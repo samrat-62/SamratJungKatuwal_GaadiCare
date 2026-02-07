@@ -1,39 +1,45 @@
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  Loader2Icon,
-  OctagonXIcon,
-  TriangleAlertIcon,
-} from "lucide-react"
-import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner";
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
 
-const Toaster = ({
+import { cn } from "@/lib/utils"
+
+function Avatar({
+  className,
   ...props
-}) => {
-  const { theme = "system" } = useTheme()
-
+}) {
   return (
-    <Sonner
-      theme={theme}
-      className="toaster group"
-      icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
-      }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)"
-        }
-      }
+    <AvatarPrimitive.Root
+      data-slot="avatar"
+      className={cn("relative flex size-8 shrink-0 overflow-hidden rounded-full", className)}
       {...props} />
   );
 }
 
-export { Toaster }
+function AvatarImage({
+  className,
+  ...props
+}) {
+  return (
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn("aspect-square size-full", className)}
+      {...props} />
+  );
+}
+
+function AvatarFallback({
+  className,
+  ...props
+}) {
+  return (
+    <AvatarPrimitive.Fallback
+      data-slot="avatar-fallback"
+      className={cn(
+        "bg-muted flex size-full items-center justify-center rounded-full",
+        className
+      )}
+      {...props} />
+  );
+}
+
+export { Avatar, AvatarImage, AvatarFallback }

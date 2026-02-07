@@ -28,7 +28,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import "leaflet/dist/leaflet.css";
 import axiosClient from "@/services/axiosMain";
 import { toast } from "sonner";
-import { REGISTER_NEW_USER } from "@/routes/serverEndpoints";
+import { CREATE_WORKSHOP, REGISTER_NEW_USER } from "@/routes/serverEndpoints";
+import { fetchPendingWorkshops } from "@/store/slice/getAllWorkshopRequest";
+import { useDispatch } from "react-redux";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -86,11 +88,12 @@ function LocationPicker({ position, setPosition }) {
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [userType, setUserType] = useState("vehicleOwner");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [workshopImage, setWorkshopImage] = useState("");
+  const [workshopImageFile, setWorkshopImageFile] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const [mapLoading, setMapLoading] = useState(false);
@@ -171,9 +174,9 @@ const Register = () => {
         setErrors(prev => ({ ...prev, workshopImage: "Image size should be less than 5MB" }));
         return;
       }
+      setWorkshopImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setWorkshopImage(reader.result);
         setErrors(prev => ({ ...prev, workshopImage: "" }));
       };
       reader.readAsDataURL(file);
@@ -263,13 +266,13 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {};
-
+    if(userType=="vehicleOwner"){
     if (!formData.userName) {
       newErrors.userName = "Username is required";
     } else if (!validateUsername(formData.userName)) {
       newErrors.userName = "Username must be 3-20 characters (letters, numbers, underscore)";
     }
-
+  }
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
@@ -326,27 +329,47 @@ const Register = () => {
 
     try {
       if (userType === "workshop") {
-        const workshopData = {
-          userType,
-          workshopName: formData.workshopName,
-          email: formData.email,
-          phoneNumber: formData.phoneNumber,
-          workshopAddress: formData.workshopAddress,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          isLicenseNumber: formData.isLicenseNumber,
-          servicesOffered: selectedServices,
-          password: formData.password
-        };
+        const formDataToSend = new FormData();
+        formDataToSend.append('userType', userType);
+        formDataToSend.append('workshopName', formData.workshopName);
+        formDataToSend.append('email', formData.email);
+        formDataToSend.append('phoneNumber', formData.phoneNumber);
+        formDataToSend.append('workshopAddress', formData.workshopAddress);
+        formDataToSend.append('latitude', formData.latitude);
+        formDataToSend.append('longitude', formData.longitude);
+        formDataToSend.append('isLicenseNumber', formData.isLicenseNumber);
+        formDataToSend.append('servicesOffered', JSON.stringify(selectedServices));
+        formDataToSend.append('password', formData.password);
         
-        if (workshopImage) {
-          workshopData.workshopImage = workshopImage;
+        if (workshopImageFile) {
+          formDataToSend.append('workshopImage', workshopImageFile);
         }
         
-        const response = await axiosClient.post(REGISTER_NEW_USER, workshopData);
+        const response = await axiosClient.post(CREATE_WORKSHOP, formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          withCredentials: true,
+        });
+        
         if(response.status===201){
-          toast.success(response?.data?.message||"Registration submitted for approval!");
-          navigate("/verify-token", {state: {email: formData.email}});
+          await dispatch(fetchPendingWorkshops());
+          toast.success(response?.data?.message||"Registration submitted for approval! You will be notified via email.");
+          setFormData({
+    userName: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    confirmPassword: "",
+    workshopName: "",
+    workshopAddress: "",
+    latitude: "",
+    longitude: "",
+    isLicenseNumber: ""
+  })
+  setWorkshopImageFile(null);
+  setSelectedServices([]);
+  setAgreeTerms(false);
         }
       } else {
         const userData = {
@@ -356,13 +379,15 @@ const Register = () => {
           phoneNumber: formData.phoneNumber,
           password: formData.password
         };
-        const response = await axiosClient.post(REGISTER_NEW_USER, userData);
+        const response = await axiosClient.post(REGISTER_NEW_USER, userData, {
+          withCredentials: true,
+        });
         if(response.status===201){
           toast.success(response?.data?.message||"Registration successful! Please verify your email.");
           navigate("/verify-token/verifyEmail", {state: {email: formData.email}});
         }
       }
-    } catch(error) {
+    } catch(error) {       
       toast.error(error?.response?.data?.message||"Error registering user. Please try again.");
       console.error("Error registering user:", error);
     } finally {
@@ -482,6 +507,8 @@ const Register = () => {
 
             <div className="max-h-[550px] overflow-y-auto pr-2">
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {
+                  userType === "vehicleOwner" && 
                 <div>
                   <Label htmlFor="userName" className="flex items-center gap-2 mb-1">
                     <User className="h-4 w-4" />
@@ -502,6 +529,7 @@ const Register = () => {
                     </p>
                   )}
                 </div>
+                }
 
                 {userType === "workshop" && (
                   <div>
@@ -714,14 +742,12 @@ const Register = () => {
                           id="workshop-image"
                         />
                         <label htmlFor="workshop-image" className="cursor-pointer">
-                          {workshopImage ? (
+                          {workshopImageFile ? (
                             <div className="space-y-2">
-                              <img
-                                src={workshopImage}
-                                alt="Workshop preview"
-                                className="w-full h-32 object-cover rounded-lg mx-auto"
-                              />
-                              <p className="text-green-600 text-sm">Image uploaded</p>
+                              <div className="w-full h-32 bg-gray-100 rounded-lg mx-auto flex items-center justify-center">
+                                <p className="text-green-600 text-sm">Image selected: {workshopImageFile.name}</p>
+                              </div>
+                              <p className="text-green-600 text-sm">Image will be uploaded</p>
                             </div>
                           ) : (
                             <div className="space-y-2">

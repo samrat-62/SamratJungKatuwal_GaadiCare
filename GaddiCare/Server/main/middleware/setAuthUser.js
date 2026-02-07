@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import Workshop from "../models/workshop.js";
 
 const setAuthUser = async (req, res, next) => {
   try {
@@ -12,12 +13,15 @@ const setAuthUser = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findOne({ userId: decoded.userId })
-      .select("-password");
+    let authUser = await User.findOne({ userId: decoded.userId }).select("-password");
 
-    req.authUser = user || null;
+
+    if (!authUser) {
+      authUser = await Workshop.findOne({ workshopId: decoded.userId }).select("-password");
+    }
+
+    req.authUser = authUser || null;
     next();
-
   } catch (error) {
     req.authUser = null;
     next();

@@ -3,6 +3,7 @@ import axiosClient from '@/services/axiosMain';
 import { toast } from 'sonner';
 import { GET_AUTH_USER, LOGOUT_USER } from '@/routes/serverEndpoints';
 
+
 // fetch the user data
 export const fetchAuthUser = createAsyncThunk(
   'auth/fetchAuthUser',
@@ -32,6 +33,7 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+
 
 
 const authSlice = createSlice({

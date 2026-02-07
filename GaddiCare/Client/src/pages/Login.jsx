@@ -209,7 +209,7 @@ const Login = () => {
                   />
                   <Label htmlFor="remember" className="text-sm">Remember me</Label>
                 </div>
-                <button onClick={() => setOpenEmailDialog(true)} className="text-sm text-primary hover:underline cursor-pointer">
+                <button type="button" onClick={() => setOpenEmailDialog(true)} className="text-sm text-primary hover:underline cursor-pointer">
                   Forgot Password?
                 </button>
               </div>
@@ -235,7 +235,7 @@ const Login = () => {
 
               <p className="text-center text-sm text-gray-600">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-primary font-medium hover:underline">
+                <Link to="/register" className="text-primary font-medium hover:underline">
                   Sign Up
                 </Link>
               </p>

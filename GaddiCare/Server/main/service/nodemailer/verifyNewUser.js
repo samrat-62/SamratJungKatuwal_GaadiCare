@@ -14,7 +14,7 @@ const sendVerificationEmail = async (email, code) => {
     });
 
     const mailOptions = {
-      from: `"Your App Name" <${process.env.EMAIL_USER}>`,
+      from: `GADDICARE <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Email Verification Code",
       html: `

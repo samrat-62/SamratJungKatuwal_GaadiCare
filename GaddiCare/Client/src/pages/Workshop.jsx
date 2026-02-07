@@ -1,24 +1,23 @@
-import { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { 
-  Search, 
-  Navigation, 
-  MapPin, 
-  Star, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  Filter,
-  Sliders,
+import "leaflet/dist/leaflet.css";
+import {
+  Check,
   ChevronLeft,
   ChevronRight,
-  Phone,
-  Mail,
-  Navigation as NavigationIcon,
-  Check
+  Filter,
+  MapPin,
+  Navigation,
+  Search,
+  Shield,
+  Sliders,
+  Star,
+  Wrench,
+  XCircle
 } from "lucide-react";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useRef, useState } from "react";
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -27,220 +26,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-const workshopsData = [
-  {
-    id: 1,
-    name: "Dharan Auto Care",
-    rating: 4.8,
-    reviews: 156,
-    address: "BP Chowk, Dharan-1",
-    distance: 1.2,
-    lat: 26.8081,
-    lng: 87.2850,
-    services: ["Oil Change", "Brake Repair", "AC Service", "Engine Repair", "Car Wash"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000001",
-    email: "contact@dharanautocare.com",
-    image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=400&h=300&fit=crop",
-    description: "Premium auto service center with 10+ years of experience"
-  },
-  {
-    id: 2,
-    name: "Nepal Auto Workshop",
-    rating: 4.5,
-    reviews: 128,
-    address: "Vishnupaduka, Dharan-2",
-    distance: 2.5,
-    lat: 26.8120,
-    lng: 87.2900,
-    services: ["Tire Service", "Battery Service", "AC Service", "Oil Change"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000002",
-    email: "info@nepalauto.com",
-    image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&h=300&fit=crop",
-    description: "Complete vehicle servicing and repair"
-  },
-  {
-    id: 3,
-    name: "Hilltop Motors",
-    rating: 4.9,
-    reviews: 203,
-    address: "Purano Bazaar, Dharan-3",
-    distance: 3.1,
-    lat: 26.8050,
-    lng: 87.2800,
-    services: ["Engine Repair", "Painting", "AC Service", "Car Wash"],
-    status: "closed",
-    verified: true,
-    phone: "+977 9800000003",
-    email: "service@hilltopmotors.com",
-    image: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w-400&h=300&fit=crop",
-    description: "Specialized in engine and body works"
-  },
-  {
-    id: 4,
-    name: "Sunrise Auto Garage",
-    rating: 4.3,
-    reviews: 89,
-    address: "Bhanu Chowk, Dharan-4",
-    distance: 4.8,
-    lat: 26.8150,
-    lng: 87.2950,
-    services: ["Brake Repair", "Tire Service", "Battery Service"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000004",
-    email: "sunriseauto@email.com",
-    image: "https://images.unsplash.com/photo-1547327132-5d20850c62b3?w=400&h=300&fit=crop",
-    description: "Reliable service at affordable prices"
-  },
-  {
-    id: 5,
-    name: "City Car Service",
-    rating: 4.7,
-    reviews: 178,
-    address: "New Road, Dharan-5",
-    distance: 5.5,
-    lat: 26.8000,
-    lng: 87.2750,
-    services: ["Car Wash", "Painting", "AC Service", "Oil Change"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000005",
-    email: "citycar@service.com",
-    image: "https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=400&h=300&fit=crop",
-    description: "Modern facility with latest equipment"
-  },
-  {
-    id: 6,
-    name: "Dharan Bike & Car Care",
-    rating: 4.4,
-    reviews: 112,
-    address: "Ghopa Camp, Dharan-6",
-    distance: 6.2,
-    lat: 26.8100,
-    lng: 87.3000,
-    services: ["Engine Repair", "Brake Repair", "Tire Service"],
-    status: "closed",
-    verified: false,
-    phone: "+977 9800000006",
-    email: "dharancare@email.com",
-    image: "https://images.unsplash.com/photo-1565689221354-d87f85d4aee2?w=400&h=300&fit=crop",
-    description: "Two-wheeler and four-wheeler service"
-  },
-  {
-    id: 7,
-    name: "Auto Pro Service Center",
-    rating: 4.6,
-    reviews: 145,
-    address: "Bijaypur, Dharan-7",
-    distance: 7.8,
-    lat: 26.8200,
-    lng: 87.3100,
-    services: ["Oil Change", "AC Service", "Battery Service", "Car Wash"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000007",
-    email: "autopro@service.com",
-    image: "https://images.unsplash.com/photo-1507136566006-cfc505b114fc?w=400&h=300&fit=crop",
-    description: "Professional auto maintenance service"
-  },
-  {
-    id: 8,
-    name: "Green Valley Motors",
-    rating: 4.2,
-    reviews: 76,
-    address: "Rangeli Road, Dharan-8",
-    distance: 8.5,
-    lat: 26.8250,
-    lng: 87.3200,
-    services: ["Painting", "AC Service", "Tire Service"],
-    status: "open",
-    verified: false,
-    phone: "+977 9800000008",
-    email: "greenvalley@motors.com",
-    image: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=400&h=300&fit=crop",
-    description: "Eco-friendly vehicle services"
-  },
-  {
-    id: 9,
-    name: "Premium Auto Works",
-    rating: 4.8,
-    reviews: 192,
-    address: "Itahari Road, Dharan-9",
-    distance: 9.1,
-    lat: 26.8300,
-    lng: 87.3300,
-    services: ["Engine Repair", "Brake Repair", "AC Service", "Car Wash"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000009",
-    email: "premiumauto@works.com",
-    image: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=300&fit=crop",
-    description: "Premium quality auto repairs"
-  },
-  {
-    id: 10,
-    name: "Quick Fix Garage",
-    rating: 4.0,
-    reviews: 67,
-    address: "Biratnagar Highway, Dharan-10",
-    distance: 10.3,
-    lat: 26.8350,
-    lng: 87.3400,
-    services: ["Oil Change", "Tire Service", "Battery Service"],
-    status: "open",
-    verified: true,
-    phone: "+977 9800000010",
-    email: "quickfix@garage.com",
-    image: "https://images.unsplash.com/photo-1541447271487-09612b3f49f7?w=400&h=300&fit=crop",
-    description: "Quick and reliable minor repairs"
-  },
-  {
-    id: 11,
-    name: "Motor Master Workshop",
-    rating: 4.7,
-    reviews: 165,
-    address: "Dharan Bypass, Dharan-11",
-    distance: 11.5,
-    lat: 26.8400,
-    lng: 87.3500,
-    services: ["Engine Repair", "Painting", "AC Service", "Brake Repair"],
-    status: "closed",
-    verified: true,
-    phone: "+977 9800000011",
-    email: "motormaster@workshop.com",
-    image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop",
-    description: "Expert technicians for complex repairs"
-  },
-  {
-    id: 12,
-    name: "City Auto Hub",
-    rating: 4.3,
-    reviews: 98,
-    address: "Main Market, Dharan-12",
-    distance: 12.2,
-    lat: 26.8450,
-    lng: 87.3600,
-    services: ["Car Wash", "Oil Change", "Battery Service", "AC Service"],
-    status: "open",
-    verified: false,
-    phone: "+977 9800000012",
-    email: "cityautohub@email.com",
-    image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop",
-    description: "One-stop solution for all auto needs"
-  }
-];
-
-// All available services
 const allServices = [
   "Oil Change",
   "Brake Repair", 
+  "Tire Service",
   "AC Service",
   "Engine Repair",
-  "Tire Service",
   "Battery Service",
   "Car Wash",
   "Painting"
@@ -262,16 +53,21 @@ function LocationMarker({ setUserLocation }) {
 }
 
 const WorkshopsPage = () => {
-  const [userLocation, setUserLocation] = useState({ lat: 26.8120, lng: 87.2840 }); // Dharan center
+  const navigate = useNavigate();
+  const [userLocation, setUserLocation] = useState(null);
+  const { allWorkshops, loading: allWorkshopsLoading } = useSelector((state) => state.allWorkshops);
+  const { reviews } = useSelector((state) => state.allReviews);
   const [distanceFilter, setDistanceFilter] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServices, setSelectedServices] = useState([]);
-  const [filteredWorkshops, setFilteredWorkshops] = useState(workshopsData);
+  const [filteredWorkshops, setFilteredWorkshops] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [locationPermission, setLocationPermission] = useState(false);
   const [locationLoading, setLocationLoading] = useState(true);
   const mapRef = useRef(null);
   const workshopsPerPage = 8;
+
+  const handleNavigateToDetails = (workshopId) => navigate(`/workshop/${workshopId}`);
 
   const workshopIcon = L.divIcon({
     html: `<div class="bg-blue-600 text-white p-2 rounded-full border-2 border-white shadow-lg">
@@ -301,29 +97,26 @@ const WorkshopsPage = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setUserLocation({ lat, lng });
           setLocationPermission(true);
           setLocationLoading(false);
         },
         (error) => {
           console.log("Error getting location:", error);
           setLocationLoading(false);
-          // Use default Dharan location if permission denied
           setUserLocation({ lat: 26.8120, lng: 87.2840 });
         }
       );
     } else {
       setLocationLoading(false);
-      alert("Geolocation is not supported by this browser.");
+      setUserLocation({ lat: 26.8120, lng: 87.2840 });
     }
   }, []);
 
-  // Function to calculate distance between two coordinates (Haversine formula)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = 
@@ -334,30 +127,66 @@ const WorkshopsPage = () => {
     return R * c;
   };
 
-  // Filter workshops based on distance, search, and services
   useEffect(() => {
-    let filtered = workshopsData.filter(workshop => {
-      // Calculate distance
-      const distance = calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        workshop.lat,
-        workshop.lng
-      );
+    if (!allWorkshops || !userLocation) return;
+
+    const processWorkshops = allWorkshops.map(workshop => {
+      const lat = parseFloat(workshop.latitude);
+      const lng = parseFloat(workshop.longitude);
+      let distance = null;
       
-      // Update workshop distance
-      workshop.distance = Math.round(distance * 10) / 10;
+      if (!isNaN(lat) && !isNaN(lng)) {
+        distance = calculateDistance(userLocation.lat, userLocation.lng, lat, lng);
+        distance = Math.round(distance * 10) / 10;
+      }
+
+      const services = Array.isArray(workshop.servicesOffered) ? workshop.servicesOffered : [];
       
-      // Check distance filter
-      if (distance > distanceFilter) return false;
+      let image = "";
+      if (workshop.workshopImage && workshop.workshopImage.trim() !== "") {
+        image = `${import.meta.env.VITE_SERVER_URL}${workshop.workshopImage}`;
+      }
+
+      const workshopReviews = reviews.filter(review => review.workshopId._id === workshop._id);
+      const averageRating = workshopReviews.length > 0 
+        ? (workshopReviews.reduce((sum, review) => sum + review.rating, 0) / workshopReviews.length).toFixed(1)
+        : "0.0";
       
-      // Check search query
-      if (searchQuery && !workshop.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-          !workshop.address.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
+      return {
+        id: workshop._id,
+        workshopId: workshop.workshopId,
+        name: workshop.workshopName || "Auto Workshop",
+        rating: averageRating,
+        reviews: workshopReviews.length,
+        address: workshop.workshopAddress || "Address not available",
+        distance,
+        lat,
+        lng,
+        services,
+        isOpen: workshop.isOpen,
+        verified: workshop.accountVerified || false,
+        phone: workshop.phoneNumber || "Not available",
+        email: workshop.email || "Not available",
+        image,
+        description: workshop.description || "",
+        license: workshop.isLicenseNumber,
+        createdAt: workshop.createdAt
+      };
+    });
+
+    let filtered = processWorkshops.filter(workshop => {
+      if (workshop.distance === null) return false;
+      
+      if (workshop.distance > distanceFilter) return false;
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!workshop.name.toLowerCase().includes(query) && 
+            !workshop.address.toLowerCase().includes(query)) {
+          return false;
+        }
       }
       
-      // Check selected services
       if (selectedServices.length > 0) {
         const hasSelectedService = selectedServices.some(service => 
           workshop.services.includes(service)
@@ -368,20 +197,17 @@ const WorkshopsPage = () => {
       return true;
     });
     
-    // Sort by distance
     filtered.sort((a, b) => a.distance - b.distance);
     
     setFilteredWorkshops(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [distanceFilter, searchQuery, selectedServices, userLocation]);
+    setCurrentPage(1);
+  }, [distanceFilter, searchQuery, selectedServices, userLocation, allWorkshops, reviews]);
 
-  // Calculate pagination
   const indexOfLastWorkshop = currentPage * workshopsPerPage;
   const indexOfFirstWorkshop = indexOfLastWorkshop - workshopsPerPage;
   const currentWorkshops = filteredWorkshops.slice(indexOfFirstWorkshop, indexOfLastWorkshop);
   const totalPages = Math.ceil(filteredWorkshops.length / workshopsPerPage);
 
-  // Toggle service selection
   const toggleService = (service) => {
     if (selectedServices.includes(service)) {
       setSelectedServices(selectedServices.filter(s => s !== service));
@@ -390,17 +216,14 @@ const WorkshopsPage = () => {
     }
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setDistanceFilter(10);
     setSearchQuery("");
     setSelectedServices([]);
   };
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Get current page numbers for pagination
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxPagesToShow = 5;
@@ -422,12 +245,22 @@ const WorkshopsPage = () => {
     return pageNumbers;
   };
 
+  if (!userLocation) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading location data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-20">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Find Auto Workshops in Dharan</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Find Auto Workshops Near You</h1>
           <p className="text-gray-600">Search and filter workshops by distance and services</p>
           
           {locationLoading && (
@@ -439,12 +272,18 @@ const WorkshopsPage = () => {
           {locationPermission && !locationLoading && (
             <div className="mt-2 text-sm text-green-600 flex items-center gap-2">
               <Check className="h-4 w-4" />
-              Using your current location in Dharan
+              Using your current location
+            </div>
+          )}
+          
+          {!locationPermission && !locationLoading && (
+            <div className="mt-2 text-sm text-yellow-600 flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Using default location (Location access not granted)
             </div>
           )}
         </div>
 
-        {/* Map Section */}
         <div className="bg-white rounded-xl shadow overflow-hidden mb-8 z-10 relative">
           <div className="h-96">
             <MapContainer
@@ -458,19 +297,16 @@ const WorkshopsPage = () => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
               
-              {/* User location marker */}
               <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-                <Popup>Your Current Location (Dharan, Nepal)</Popup>
+                <Popup>Your Current Location</Popup>
               </Marker>
               
-              {/* Distance circle */}
               <Circle
                 center={[userLocation.lat, userLocation.lng]}
-                radius={distanceFilter * 1000} // Convert km to meters
+                radius={distanceFilter * 1000}
                 pathOptions={{ fillColor: 'blue', color: 'blue', fillOpacity: 0.1, weight: 2 }}
               />
               
-              {/* Workshop markers */}
               {filteredWorkshops.map((workshop) => (
                 <Marker
                   key={workshop.id}
@@ -480,13 +316,19 @@ const WorkshopsPage = () => {
                   <Popup className="custom-popup">
                     <div className="p-2 min-w-[250px]">
                       <div className="flex items-start gap-3 mb-2">
-                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
-                          <img 
-                            src={workshop.image} 
-                            alt={workshop.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        {workshop.image ? (
+                          <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+                            <img 
+                              src={workshop.image} 
+                              alt={workshop.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                            <Wrench className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
                         <div>
                           <h3 className="font-bold text-lg">{workshop.name}</h3>
                           <p className="text-sm text-gray-600">{workshop.address}</p>
@@ -517,9 +359,7 @@ const WorkshopsPage = () => {
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {/* Search Box */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow p-4">
               <div className="relative">
@@ -535,7 +375,6 @@ const WorkshopsPage = () => {
             </div>
           </div>
 
-          {/* Distance Filter */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow p-4">
               <div className="flex items-center gap-3 mb-4">
@@ -566,7 +405,6 @@ const WorkshopsPage = () => {
             </div>
           </div>
 
-          {/* Services Filter */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-xl shadow p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -591,7 +429,6 @@ const WorkshopsPage = () => {
                 ))}
               </div>
 
-              {/* Clear Filters Button */}
               {(searchQuery || selectedServices.length > 0 || distanceFilter !== 10) && (
                 <button
                   onClick={clearFilters}
@@ -604,7 +441,6 @@ const WorkshopsPage = () => {
           </div>
         </div>
 
-        {/* Workshops Grid */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -616,7 +452,12 @@ const WorkshopsPage = () => {
             </div>
           </div>
 
-          {filteredWorkshops.length === 0 ? (
+          {allWorkshopsLoading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading workshops...</p>
+            </div>
+          ) : filteredWorkshops.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-xl shadow">
               <XCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No workshops found</h3>
@@ -636,18 +477,24 @@ const WorkshopsPage = () => {
                 {currentWorkshops.map((workshop) => (
                   <div key={workshop.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
-                      <img 
-                        src={workshop.image} 
-                        alt={workshop.name}
-                        className="w-full h-48 object-cover"
-                      />
+                      {workshop.image ? (
+                        <img 
+                          src={workshop.image} 
+                          alt={workshop.name}
+                          className="w-full h-48 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                          <Wrench className="h-16 w-16 text-gray-400" />
+                        </div>
+                      )}
                       <div className="absolute top-3 left-3 flex flex-col gap-2">
                         <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          workshop.status === 'open' 
+                          workshop.isOpen === true 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {workshop.status === 'open' ? 'Open Now' : 'Closed'}
+                          {workshop?.isOpen === true ? 'Open Now' : 'Closed'}
                         </div>
                         {workshop.verified && (
                           <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -667,7 +514,7 @@ const WorkshopsPage = () => {
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 text-yellow-500 fill-current" />
                           <span className="font-semibold">{workshop.rating}</span>
-                          <span className="text-gray-500 text-sm">({workshop.reviews})</span>
+                          <span className="text-gray-500 text-sm">({workshop.reviews} reviews)</span>
                         </div>
                       </div>
                       
@@ -676,9 +523,11 @@ const WorkshopsPage = () => {
                         <span className="text-sm line-clamp-2">{workshop.address}</span>
                       </div>
                       
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-600 line-clamp-2">{workshop.description}</p>
-                      </div>
+                      {workshop.description && (
+                        <div className="mb-4">
+                          <p className="text-sm text-gray-600 line-clamp-2">{workshop.description}</p>
+                        </div>
+                      )}
                       
                       <div className="flex flex-wrap gap-2 mb-6">
                         {workshop.services.slice(0, 3).map((service, idx) => (
@@ -696,25 +545,16 @@ const WorkshopsPage = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                      <div className="flex items-center justify-center">
+                        <button onClick={()=>handleNavigateToDetails(workshop?.workshopId)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
                           View Details
                         </button>
-                        <div className="flex gap-2">
-                          <button className="p-2 text-gray-600 hover:text-blue-600">
-                            <Phone className="h-4 w-4" />
-                          </button>
-                          <button className="p-2 text-gray-600 hover:text-blue-600">
-                            <NavigationIcon className="h-4 w-4" />
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-8">
                   <button

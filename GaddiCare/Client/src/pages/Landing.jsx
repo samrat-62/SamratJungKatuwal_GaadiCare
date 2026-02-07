@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
 import { Search, Shield, Clock, Star, MapPin, Car, Map, Bell, CheckCircle, Wrench, Calendar, TrendingUp, Users } from "lucide-react";
-import { useState } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
 const Landing = () => {
-  const [user] = useState(false);
   const navigate = useNavigate();
+  const { data: userData } = useSelector(state => state.userData);
+  
+  const isAuthenticated = userData ;
   
   const stats = [
     { number: "15K+", label: "Active Users", icon: <Shield className="text-orange-500" size={24} /> },
@@ -92,7 +94,9 @@ const Landing = () => {
                   <Search size={22} />
                   Find Workshop Near You
                 </button>
-                {!user && (
+                
+                
+                {!isAuthenticated &&
                   <button 
                     onClick={handleCreateAccount}
                     className="bg-transparent border-2 border-white hover:bg-white hover:text-gray-900 text-white px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105"
@@ -100,7 +104,7 @@ const Landing = () => {
                     <Users size={22} />
                     Create Account
                   </button>
-                )}
+                }
               </motion.div>
             </div>
           </div>
@@ -248,7 +252,8 @@ const Landing = () => {
               <Search size={22} />
               Find Workshop Now
             </button>
-            {!user && (
+            
+            {!isAuthenticated &&
               <button 
                 onClick={handleCreateAccount}
                 className="bg-transparent border-2 border-white hover:bg-white hover:text-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-3 transition-all duration-300 hover:scale-105"
@@ -256,7 +261,7 @@ const Landing = () => {
                 <Users size={22} />
                 Create Account
               </button>
-            )}
+            }
           </motion.div>
         </div>
       </div>

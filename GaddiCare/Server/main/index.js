@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import connectDB from './database/connect.js';
 import authRouter from './routes/authRoute.js';
 import setAuthUser from './middleware/setAuthUser.js';
+import path from 'path';
+import commonRouter from './routes/commonRoute.js';
 
 dotenv.config();
 
@@ -25,6 +27,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(express.static(path.resolve("./Upload")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -34,6 +37,7 @@ app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
 app.use('/api/auth', authRouter);
+app.use("/api/common",commonRouter);
 
 
 server.listen(PORT, () => {

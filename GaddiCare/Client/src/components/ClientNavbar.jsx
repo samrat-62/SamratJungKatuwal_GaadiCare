@@ -87,7 +87,7 @@ const ClientNavbar = () => {
               }}
             />
           </div>
-          <h1 className={`text-2xl font-bold tracking-tight ${scrolled ? "text-gray-800" : "text-black"}`}>
+          <h1 className={`text-2xl font-bold tracking-tight ${scrolled ? "text-gray-800" : "text-white"}`}>
             GaddiCare
           </h1>
         </motion.div>
@@ -129,7 +129,7 @@ const ClientNavbar = () => {
                     className="cursor-pointer"
                   >
                     <Avatar className="border-2 border-blue-500">
-                      <AvatarImage src={data?.userImage} />
+                      <AvatarImage src={`${import.meta.env.VITE_SERVER_URL}/${data.userImage}`} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold text-lg">
                         {getInitial()}
                       </AvatarFallback>
@@ -242,7 +242,7 @@ const ClientNavbar = () => {
               <>
                 <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-white/10">
                   <Avatar className="border-2 border-blue-500">
-                    <AvatarImage src={user.profileImage} />
+                    <AvatarImage src={`${import.meta.env.VITE_SERVER_URL}/${data.userImage}`} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold">
                       {getInitial()}
                     </AvatarFallback>

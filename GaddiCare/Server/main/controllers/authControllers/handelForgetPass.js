@@ -1,7 +1,7 @@
 import User from "../../models/user.js";
+import Workshop from "../../models/workshop.js";
 import { generateVerificationToken } from "../../service/createVerifyToken.js";
 import sendForgotPasswordEmail from "../../service/nodemailer/forgetPassCode.js";
-
 
 const handleForgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -11,22 +11,30 @@ const handleForgotPassword = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    let account = await User.findOne({ email });
+    let accountType = "user";
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
+    if (!account) {
+      account = await Workshop.findOne({ email });
+      accountType = "workshop";
+    }
+
+    if (!account) {
+      return res.status(404).json({ message: "Account not found." });
     }
 
     const { token, expiresAt } = generateVerificationToken();
 
-    user.verifyCode = token;
-    user.codeExpire = expiresAt;
+    account.verifyCode = token;
+    account.codeExpire = expiresAt;
 
-    await user.save();
+    await account.save();
     await sendForgotPasswordEmail(email, token);
 
     return res.status(200).json({
+      success: true,
       message: "Password reset code sent to your email.",
+      accountType,
     });
   } catch (error) {
     console.error("Forgot password error:", error);

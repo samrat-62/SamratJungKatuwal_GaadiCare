@@ -1,12 +1,13 @@
 import NewUser from "../../models/newUser.js";
 import User from "../../models/user.js";
+import Workshop from "../../models/workshop.js";
 import { generateVerificationToken } from "../../service/createVerifyToken.js";
 import sendForgotPasswordEmail from "../../service/nodemailer/forgetPassCode.js";
 import sendVerificationEmail from "../../service/nodemailer/verifyNewUser.js";
 
 const resendVerificationCode = async (req, res) => {
   const { email } = req.params;
-  const { type } = req.body;
+  const { type } = req.body; 
 
   if (!email) {
     return res.status(400).json({ message: "Email is required." });
@@ -14,25 +15,35 @@ const resendVerificationCode = async (req, res) => {
 
   try {
     if (type === "reset") {
-      const user = await User.findOne({ email });
+      let account = await User.findOne({ email });
+      let accountType = "user";
 
-      if (!user) {
-        return res.status(404).json({ message: "User not found." });
+      if (!account) {
+        account = await Workshop.findOne({ email });
+        accountType = "workshop";
+      }
+
+      if (!account) {
+        return res.status(404).json({ message: "Account not found." });
       }
 
       const { token, expiresAt } = generateVerificationToken();
 
-      user.verifyCode = token;
-      user.codeExpire = expiresAt;
+      account.verifyCode = token;
+      account.codeExpire = expiresAt;
 
-      await user.save();
+      await account.save();
 
       await sendForgotPasswordEmail(email, token);
 
-      res.status(200).json({
-        message: "Password reset code resent successfully.",
+      return res.status(200).json({
+        success: true,
+        message: `Password reset code resent successfully.`,
+        accountType,
       });
-    } else {
+    }
+
+    else {
       const user = await NewUser.findOne({ email });
 
       if (!user) {
@@ -48,13 +59,14 @@ const resendVerificationCode = async (req, res) => {
 
       await sendVerificationEmail(email, token);
 
-      res.status(200).json({
+      return res.status(200).json({
+        success: true,
         message: "Verification code resent successfully.",
       });
     }
   } catch (error) {
     console.error("Resend verification error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Server error. Please try again later.",
     });
   }

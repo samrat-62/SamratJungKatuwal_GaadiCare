@@ -36,7 +36,7 @@ const newUserSchema=new Schema(
             type:Date,
             required:false
         }
-    }
+    },{timestamps:true}
 );
 
 
