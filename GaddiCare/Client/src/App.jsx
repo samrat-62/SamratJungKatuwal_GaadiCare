@@ -9,6 +9,8 @@ import { fetchAllUsers } from "./store/slice/getAllUsers"
 import { fetchPendingWorkshops } from "./store/slice/getAllWorkshopRequest"
 import { fetchAllBookings } from "./store/slice/getAllBookings"
 import { fetchAllReviews } from "./store/slice/getAllReviews"
+import { isAllOf } from "@reduxjs/toolkit"
+import { fetchAlerts } from "./store/slice/getNotifications"
 
 
 function App() {
@@ -20,10 +22,11 @@ function App() {
    const {pendingWorkshops,loading:pendingWorkshopsLoading}=useSelector((state)=>state.pendingWorkshops);
    const {bookings,loading:bookingsLoading}=useSelector((state)=>state.allBookings);
    const {reviews,loading:reviewsLoading}=useSelector((state)=>state.allReviews);
+   const {notificationList} = useSelector((state) => state.allNotifications);
 
 
    useEffect(() => {
-    const fetchData = async () => {
+    const getData = async () => {
       if (!data) {
         await dispatch(fetchAuthUser());
       }
@@ -42,8 +45,11 @@ function App() {
       if(reviews?.length===0){
         await dispatch(fetchAllReviews());
       }
+      if(notificationList?.length===0){
+        await dispatch(fetchAlerts());
+      }
     };
-    fetchData();
+    getData();
   }, []);
 
 

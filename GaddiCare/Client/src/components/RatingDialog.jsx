@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import axiosClient from "@/services/axiosMain";
 import { ADD_REVIEW } from "@/routes/serverEndpoints";
 import { fetchAllReviews } from "@/store/slice/getAllReviews";
+import { useDispatch } from "react-redux";
 
 const RatingDialog = ({ 
   open, 
@@ -27,7 +28,7 @@ const RatingDialog = ({
   const [hoverRating, setHoverRating] = useState(0);
   const [review, setReview] = useState("");
   const [error, setError] = useState("");
-  const dispatch = fetchAllReviews(); 
+  const dispatch = useDispatch(); 
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -54,9 +55,9 @@ const RatingDialog = ({
       );
 
       if (response.status === 200 || response.status === 201) {
-        toast.success(response?.data?.message ||"Review submitted successfully!");
         await dispatch(fetchAllReviews());
         handleClose();
+        toast.success(response?.data?.message ||"Review submitted successfully!");
       }
     } catch (err) {
       console.error("Review submission error:", err);

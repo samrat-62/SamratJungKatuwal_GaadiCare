@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarIcon, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight, Phone, Search, Eye, Trash2 } from 'lucide-react'
-import moment from 'moment'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import BookingDetailsDialog from '@/components/BookingDetailsDialog'
-import axiosClient from '@/services/axiosMain'
 import { BOOK_SERVICE } from '@/routes/serverEndpoints'
+import axiosClient from '@/services/axiosMain'
 import { fetchAllBookings } from '@/store/slice/getAllBookings'
+import { Ban, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, Phone, Search, Trash2, XCircle } from 'lucide-react'
+import moment from 'moment'
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 
 const ServiceHistory = () => {
@@ -29,8 +28,10 @@ const ServiceHistory = () => {
   const [dateRange, setDateRange] = useState({ from: null, to: null })
   const [statusCounts, setStatusCounts] = useState({
     completed: 0,
-    cancelled: 0
+    cancelled: 0,
+    rejected: 0
   })
+  const [deleteLoading, setDeleteLoading] = useState({})
   
   const itemsPerPage = 6
 
@@ -56,10 +57,12 @@ const ServiceHistory = () => {
       
       const completedBookings = workshopBookings.filter(b => b.status === 'completed')
       const cancelledBookings = workshopBookings.filter(b => b.status === 'cancelled')
+      const rejectedBookings = workshopBookings.filter(b => b.status === 'rejected')
       
       setStatusCounts({
         completed: completedBookings.length,
-        cancelled: cancelledBookings.length
+        cancelled: cancelledBookings.length,
+        rejected: rejectedBookings.length
       })
       
       let filtered = []
@@ -67,6 +70,8 @@ const ServiceHistory = () => {
         filtered = completedBookings
       } else if (activeTab === 'cancelled') {
         filtered = cancelledBookings
+      } else if (activeTab === 'rejected') {
+        filtered = rejectedBookings
       }
       
       filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -78,7 +83,8 @@ const ServiceHistory = () => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       'completed': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-4 w-4" />, label: 'Completed' },
-      'cancelled': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, label: 'Cancelled' }
+      'cancelled': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, label: 'Cancelled' },
+      'rejected': { color: 'bg-amber-100 text-amber-800', icon: <Ban className="h-4 w-4" />, label: 'Rejected' }
     }
     
     const config = statusConfig[status] || statusConfig.completed
@@ -128,6 +134,8 @@ const ServiceHistory = () => {
   }
 
   const handleDelete = async (booking) => {
+    setDeleteLoading(prev => ({ ...prev, [booking._id]: true }));
+    
     try{
          const response = await axiosClient.delete(`${BOOK_SERVICE}/${booking._id}`, { withCredentials: true });
          if(response.status === 200){
@@ -137,6 +145,8 @@ const ServiceHistory = () => {
     }catch(error){
       console.error("Delete Booking Error:", error);
       toast.error(error.response?.data?.message || "Failed to delete booking");
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [booking._id]: false }));
     }
   }
 
@@ -176,7 +186,7 @@ const ServiceHistory = () => {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Service History</h1>
-        <p className="text-gray-600">View your completed and cancelled service requests</p>
+        <p className="text-gray-600">View your completed, cancelled and rejected service requests</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -239,7 +249,7 @@ const ServiceHistory = () => {
             setActiveTab(value)
             setCurrentPage(1)
           }}>
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg">
               <TabsTrigger 
                 value="completed" 
                 className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2"
@@ -258,12 +268,24 @@ const ServiceHistory = () => {
                   <span className="text-sm text-gray-500">{statusCounts.cancelled}</span>
                 </div>
               </TabsTrigger>
+              <TabsTrigger 
+                value="rejected" 
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2"
+              >
+                <div className="flex flex-col items-center">
+                  <span className="font-medium">Rejected</span>
+                  <span className="text-sm text-gray-500">{statusCounts.rejected}</span>
+                </div>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="completed" className="mt-6">
               {renderBookings(currentItems)}
             </TabsContent>
             <TabsContent value="cancelled" className="mt-6">
+              {renderBookings(currentItems)}
+            </TabsContent>
+            <TabsContent value="rejected" className="mt-6">
               {renderBookings(currentItems)}
             </TabsContent>
           </Tabs>
@@ -324,8 +346,10 @@ const ServiceHistory = () => {
             <div className="text-gray-400 mb-4">
               {activeTab === 'completed' ? (
                 <CheckCircle className="h-16 w-16 mx-auto" />
-              ) : (
+              ) : activeTab === 'cancelled' ? (
                 <XCircle className="h-16 w-16 mx-auto" />
+              ) : (
+                <Ban className="h-16 w-16 mx-auto" />
               )}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -334,7 +358,9 @@ const ServiceHistory = () => {
             <p className="text-gray-600">
               {activeTab === 'completed' 
                 ? "You don't have any completed services yet."
-                : "You don't have any cancelled services."}
+                : activeTab === 'cancelled'
+                ? "You don't have any cancelled services."
+                : "You don't have any rejected services."}
             </p>
             {(searchQuery || dateRange.from || dateRange.to) && (
               <Button 
@@ -354,6 +380,7 @@ const ServiceHistory = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {bookings.map((booking) => {
           const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:8000'
+          const isDeleteLoading = deleteLoading[booking._id];
           
           return (
             <Card key={booking._id} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -408,25 +435,29 @@ const ServiceHistory = () => {
                       size="sm" 
                       className="flex-1 flex items-center gap-1"
                       onClick={() => handleViewDetails(booking)}
+                      disabled={isDeleteLoading}
                     >
                       <Eye className="h-4 w-4" />
                       View Details
                     </Button>
-                    {
-                      isDialogOpen && ( <BookingDetailsDialog 
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        booking={selectedBooking}
-      />)
-                    }
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="flex-1 flex items-center gap-1 border-red-600 text-red-600 hover:bg-red-50"
                       onClick={() => handleDelete(booking)}
+                      disabled={isDeleteLoading}
                     >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
+                      {isDeleteLoading ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

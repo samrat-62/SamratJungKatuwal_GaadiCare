@@ -9,9 +9,11 @@ import AppProvider from './components/ContextApi'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
+      <SocketProvider>
     <AppProvider>
     <RouterProvider router={router} />
     </AppProvider>
+      </SocketProvider>
     </Provider>
   </StrictMode>,
 )

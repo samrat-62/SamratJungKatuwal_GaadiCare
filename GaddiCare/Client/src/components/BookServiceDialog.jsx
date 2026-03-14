@@ -31,6 +31,8 @@ import { useEffect, useState } from "react";
 import { BOOK_SERVICE } from "@/routes/serverEndpoints";
 import axiosClient from "@/services/axiosMain";
 import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { fetchAllBookings } from "@/store/slice/getAllBookings";
 
 const BookServiceDialog = ({ 
   open, 
@@ -42,6 +44,7 @@ const BookServiceDialog = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     vehicleType: "",
@@ -182,6 +185,7 @@ const BookServiceDialog = ({
 
       if (response.status === 201) {
         handleClose();
+        await dispatch(fetchAllBookings());
         toast.success(response?.data?.message || "Service booked successfully");
       } 
     } catch (err) {

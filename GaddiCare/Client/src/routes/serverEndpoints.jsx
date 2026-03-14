@@ -32,3 +32,8 @@ export const GET_ALL_REVIEWS="/common/get-all-reviews";
 export const UPLOAD_WORKSHOP_IMAGE="/common/workshopImage";
 export const UPDATE_WORKSHOP_PROFILE="/common/update-workshop-profile";
 export const UPDATE_BOOKING_STATUS="/common/update-booking-status";
+
+export const GET_NOTIFICATIONS="/common/all-notifications";
+export const READ_NOTIFICATIONS="/common/notifications-mark-read";
+export const DELETE_SPECIFIC_NOTIFICATION="/common/del-notification";
+export const DELETE_TOTAL_NOTIFICATIONS="/common/del-all-notifications";

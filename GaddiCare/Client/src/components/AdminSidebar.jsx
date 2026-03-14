@@ -54,7 +54,6 @@ const AdminSidebar = ({count}) => {
 
   return (
     <aside className={`bg-gray-900 text-white transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} min-h-screen fixed left-0 top-0 z-40`}>
-      {/* Sidebar Header */}
       <div className="p-4 border-b border-gray-700 flex items-center justify-between">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
@@ -79,7 +78,7 @@ const AdminSidebar = ({count}) => {
         </Button>
       </div>
 
-      {/* Menu Items */}
+    
       <nav className="p-4">
         <ul className="space-y-2">
           {menuItems.map((item) => (
@@ -109,7 +108,7 @@ const AdminSidebar = ({count}) => {
         </ul>
       </nav>
 
-      {/* Logout Button */}
+   
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
         <Button
           variant="ghost"

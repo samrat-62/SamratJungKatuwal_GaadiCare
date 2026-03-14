@@ -14,7 +14,8 @@ const BookingDetailsDialog = ({ isOpen, onClose, booking }) => {
       'accepted': { color: 'bg-blue-100 text-blue-800', icon: <CheckCircle className="h-4 w-4" />, label: 'Accepted' },
       'in-progress': { color: 'bg-purple-100 text-purple-800', icon: <Wrench className="h-4 w-4" />, label: 'In Progress' },
       'completed': { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-4 w-4" />, label: 'Completed' },
-      'cancelled': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, label: 'Cancelled' }
+      'cancelled': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, label: 'Cancelled' },
+      'rejected': { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, label: 'Rejected' }
     }
     
     const config = statusConfig[status] || statusConfig.pending
