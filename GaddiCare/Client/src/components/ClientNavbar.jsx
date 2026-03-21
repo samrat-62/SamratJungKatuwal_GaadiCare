@@ -1,11 +1,15 @@
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { Menu, X, LogOut, User } from "lucide-react";
-import { useWindowScroll } from "react-use";
-import { useSelector, useDispatch } from "react-redux";
+import { clearAllAlerts, deleteAlert, fetchAlerts, markAllAlertsRead } from "@/store/slice/getNotifications.jsx";
 import { fetchAuthUser, logoutUser } from "@/store/slice/userSlice";
+import { motion } from "framer-motion";
+import { Bell, CheckCircle, LogOut, Menu, Trash2, User, X, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useLocation, useNavigate } from "react-router";
+import { useWindowScroll } from "react-use";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +17,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-
+import { ScrollArea } from "./ui/scroll-area";
+import { Separator } from "./ui/separator";
 
 const ClientNavbar = () => {
   const location = useLocation();
@@ -21,14 +26,24 @@ const ClientNavbar = () => {
   const dispatch = useDispatch();
   const [scrolled, setScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { y: scrollY } = useWindowScroll();
   const { data } = useSelector(state => state.userData);
+  const { notificationList } = useSelector((state) => state.allNotifications);
 
   const navItems = [
     { name: "Home", path: "/", show: true },
     { name: "Workshops", path: "/workshop", show: data },
     { name: "About Us", path: "/about", show: true },
   ];
+
+  const userNotifications = notificationList?.filter(notification => 
+    notification.userId === data?._id
+  ) || []
+
+  const userUnreadCount = userNotifications.filter(notification => 
+    notification.read === false
+  ).length
 
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/";
@@ -43,6 +58,7 @@ const ClientNavbar = () => {
     setIsMobileOpen(false);
   }, [location.pathname]);
 
+
   const handleNavClick = (path) => {
     navigate(path);
     setIsMobileOpen(false);
@@ -53,6 +69,31 @@ const ClientNavbar = () => {
     await dispatch(fetchAuthUser());
     navigate("/login");
   };
+
+  const handleMarkAllRead = async () => {
+    if (userUnreadCount > 0) {
+      await dispatch(markAllAlertsRead())
+      dispatch(fetchAlerts())
+    }
+  }
+
+  const handleDeleteNotification = async (id) => {
+    await dispatch(deleteAlert(id))
+    dispatch(fetchAlerts())
+  }
+
+  const handleClearAll = async () => {
+    await dispatch(clearAllAlerts())
+    dispatch(fetchAlerts())
+    setIsNotificationOpen(false)
+  }
+
+  const handleNotificationDialogOpen = (open) => {
+    setIsNotificationOpen(open)
+    if (open && userUnreadCount > 0) {
+      dispatch(markAllAlertsRead())
+    }
+  }
 
   const getInitial = () => {
     if (!data?.userName) return "U";
@@ -120,6 +161,77 @@ const ClientNavbar = () => {
             </motion.div>
           ))}
           <div className="flex items-center gap-4 ml-6">
+            {data && (
+              <Dialog open={isNotificationOpen} onOpenChange={handleNotificationDialogOpen}>
+                <DialogTrigger asChild>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative cursor-pointer"
+                  >
+                    <Button variant="ghost" size="icon" className="text-black bg-white">
+                      <Bell className="h-5 w-5" />
+                      {userUnreadCount > 0 && (
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-orange-600">
+                          {userUnreadCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </motion.div>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <div className="flex items-center justify-between">
+                      <DialogTitle>Notifications</DialogTitle>
+                      <div className="flex gap-2">
+                        {userUnreadCount > 0 && (
+                          <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Mark all read
+                          </Button>
+                        )}
+                        {userNotifications.length > 0 && (
+                          <Button variant="destructive" size="sm" onClick={handleClearAll}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Clear all
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </DialogHeader>
+                  <Separator />
+                  <ScrollArea className="h-[400px]">
+                    {userNotifications.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        No notifications
+                      </div>
+                    ) : (
+                      userNotifications.map((notification) => (
+                        <div key={notification._id} className="p-4 hover:bg-gray-50 border-b last:border-b-0">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold">{notification.title}</h4>
+                              <p className="text-sm text-gray-600">{notification.content}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(notification.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDeleteNotification(notification._id)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+            )}
             {data ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -248,10 +360,26 @@ const ClientNavbar = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold text-white">{user.username}</p>
-                    <p className="text-sm text-white/80">{user.email}</p>
+                    <p className="font-semibold text-white">{data.userName}</p>
+                    <p className="text-sm text-white/80">{data.email}</p>
                   </div>
                 </div>
+                {userUnreadCount > 0 && (
+                  <motion.button
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.05 }}
+                    onClick={() => handleNotificationDialogOpen(true)}
+                    className={`w-full py-3.5 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-2 ${
+                      scrolled 
+                        ? "bg-orange-100 text-orange-700 hover:bg-orange-200" 
+                        : "bg-orange-500 text-white hover:bg-orange-600"
+                    }`}
+                  >
+                    <Bell className="h-5 w-5" />
+                    Notifications ({userUnreadCount})
+                  </motion.button>
+                )}
                 <motion.button
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}

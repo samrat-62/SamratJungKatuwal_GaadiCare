@@ -4,7 +4,6 @@ import { Mail, Lock, Car, CheckCircle, DollarSign, Headphones, AlertCircle } fro
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import EmailDialog from "@/components/EmailDialog"
 import { useNavigate } from "react-router"
 import { toast } from "sonner"
@@ -19,7 +18,6 @@ const Login = () => {
     email: "",
     password: ""
   })
-  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [openEmailDialog, setOpenEmailDialog] = useState(false);
@@ -201,14 +199,6 @@ const Login = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={setRememberMe}
-                  />
-                  <Label htmlFor="remember" className="text-sm">Remember me</Label>
-                </div>
                 <button type="button" onClick={() => setOpenEmailDialog(true)} className="text-sm text-primary hover:underline cursor-pointer">
                   Forgot Password?
                 </button>

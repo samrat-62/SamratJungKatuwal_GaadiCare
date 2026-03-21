@@ -1,9 +1,10 @@
 import BookServiceDialog from "@/components/BookServiceDialog";
+import RatingDialog from "@/components/RatingDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CREATE_ROOM } from "@/routes/serverEndpoints";
 import { GET_WORKSHOP_BY_ID } from "@/routes/serverEndpoints";
 import axiosClient from "@/services/axiosMain";
 import L from "leaflet";
@@ -21,7 +22,6 @@ import {
   MessageCircle,
   Phone,
   PhoneCall,
-  Shield,
   ShieldCheck,
   Star,
   Users,
@@ -33,7 +33,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router";
-import RatingDialog from "@/components/RatingDialog";
+import { toast } from "sonner";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -53,9 +53,10 @@ const SingleWorkshopPage = () => {
   const [hasBookedService, setHasBookedService] = useState(false);
   const [existingReview, setExistingReview] = useState(null);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
-  const {data:userData}=useSelector(state=>state.userData);
-  const {reviews}=useSelector(state=>state.allReviews);
-  const {bookings}=useSelector(state=>state.allBookings);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const {data: userData} = useSelector(state => state.userData);
+  const {reviews, reviewLoading} = useSelector(state => state.allReviews);
+  const {bookings} = useSelector(state => state.allBookings);
 
   useEffect(() => {
     const fetchWorkshop = async () => {
@@ -102,7 +103,7 @@ const SingleWorkshopPage = () => {
       );
       setExistingReview(userReview || null);
     }
-  },[userData, bookings, workshop, reviews]);
+  }, [userData, bookings, workshop, reviews]);
 
   const parseServices = (services) => {
     if (!services || services.length === 0) return [];
@@ -116,14 +117,14 @@ const SingleWorkshopPage = () => {
     }
   };
 
-  const handleShow=(id)=>{
-    if(id){
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+  const handleShow = (id) => {
+    if (id) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
-    }
-  }
+  };
 
   const getCurrentDaySchedule = () => {
     if (!workshop?.workingHours) return null;
@@ -176,6 +177,36 @@ const SingleWorkshopPage = () => {
         open: true 
       };
     });
+  };
+
+  const handleCreateChatRoom = async () => {
+    if (!userData || !workshop) {
+      toast.error("Unable to start chat. Please try again.");
+      return;
+    }
+
+    setIsCreatingChat(true);
+    try {
+      const response = await axiosClient.post(
+        CREATE_ROOM,
+        {
+          targetUserId: workshop._id,
+          targetUserType: workshop.userType
+        },
+        { withCredentials: true }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        const room = response.data.room;
+       toast.success(response?.data?.message || `Chat room ${response.data.status} successfully!`);
+        navigate(`/user-chat?room=${room._id}`);
+      }
+    } catch (error) {
+      console.error("Error creating chat room:", error);
+      toast.error(error.response?.data?.error || "Failed to create chat room");
+    } finally {
+      setIsCreatingChat(false);
+    }
   };
 
   if (loading) {
@@ -243,6 +274,7 @@ const SingleWorkshopPage = () => {
     : 'Not available';
 
   const workshopReviews = reviews.filter(review => review.workshopId._id === workshop._id);
+  const topFiveReviews = workshopReviews.slice(0, 5);
   const averageRating = workshopReviews.length > 0 
     ? (workshopReviews.reduce((sum, review) => sum + review.rating, 0) / workshopReviews.length).toFixed(1)
     : "0.0";
@@ -360,9 +392,23 @@ const SingleWorkshopPage = () => {
                   <PhoneCall className="h-4 w-4" />
                   Call Now
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  Send Message
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  onClick={handleCreateChatRoom}
+                  disabled={isCreatingChat}
+                >
+                  {isCreatingChat ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4" />
+                      Send Message
+                    </>
+                  )}
                 </Button>
                 <Button 
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
@@ -481,6 +527,69 @@ const SingleWorkshopPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <Star className="h-5 w-5 text-amber-500" />
+                  <h2 className="text-xl font-bold text-gray-900">Customer Reviews</h2>
+                  <Badge>{workshopReviews.length} reviews</Badge>
+                </div>
+                
+                {topFiveReviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {topFiveReviews.map((review) => (
+                      <div key={review._id} className="p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            {review.userId.userImage ? (
+                              <img 
+                                src={`${import.meta.env.VITE_SERVER_URL}/${review.userId.userImage}`} 
+                                alt={review.userId.userName}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Users className="h-5 w-5 text-blue-600" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-gray-900">{review.userId.userName}</p>
+                              <p className="text-sm text-gray-500">{review.userId.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i}
+                                className={`h-4 w-4 ${i < review.rating ? 'fill-amber-500 text-amber-500' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 mb-3">{review.comment}</p>
+                        <p className="text-xs text-gray-500">
+                          Reviewed on {moment(review.createdAt).format('MMMM Do YYYY, h:mm A')}
+                        </p>
+                      </div>
+                    ))}
+                    {workshopReviews.length > 5 && (
+                      <div className="text-center pt-4 border-t border-gray-200">
+                        <p className="text-gray-600">
+                          Showing {topFiveReviews.length} of {workshopReviews.length} reviews
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium">No reviews yet</p>
+                    <p className="text-sm text-gray-500 mt-2">Be the first to review this workshop</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-8">
@@ -547,31 +656,31 @@ const SingleWorkshopPage = () => {
               </CardContent>
             </Card>
 
-           <Card className="border shadow-sm">
-  <CardContent className="p-6">
-    <h2 className="text-xl font-bold text-gray-900 mb-6">Business Hours</h2>
-    
-    {!workshop.workingHours || Object.keys(workshop.workingHours).length === 0 ? (
-      <div className="text-center py-8">
-        <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600 font-medium">Business hours not specified</p>
-        <p className="text-sm text-gray-500 mt-2">This workshop hasn't set their working hours yet</p>
-      </div>
-    ) : (
-      <div className="space-y-3">
-        {workingHoursList.map((schedule, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${schedule.open ? 'bg-green-500' : 'bg-red-500'}`}></span>
-              <span className={schedule.open ? "text-gray-900" : "text-gray-400"}>{schedule.label}</span>
-            </div>
-            <span className={schedule.open ? "text-gray-700 font-medium" : "text-gray-400"}>{schedule.hours}</span>
-          </div>
-        ))}
-      </div>
-    )}
-  </CardContent>
-</Card>
+            <Card className="border shadow-sm">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">Business Hours</h2>
+                
+                {!workshop.workingHours || Object.keys(workshop.workingHours).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium">Business hours not specified</p>
+                    <p className="text-sm text-gray-500 mt-2">This workshop hasn't set their working hours yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {workingHoursList.map((schedule, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${schedule.open ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          <span className={schedule.open ? "text-gray-900" : "text-gray-400"}>{schedule.label}</span>
+                        </div>
+                        <span className={schedule.open ? "text-gray-700 font-medium" : "text-gray-400"}>{schedule.hours}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             <Card className="border shadow-sm" id="contact-info-card">
               <CardContent className="p-6">

@@ -37,3 +37,9 @@ export const GET_NOTIFICATIONS="/common/all-notifications";
 export const READ_NOTIFICATIONS="/common/notifications-mark-read";
 export const DELETE_SPECIFIC_NOTIFICATION="/common/del-notification";
 export const DELETE_TOTAL_NOTIFICATIONS="/common/del-all-notifications";
+
+export const CREATE_ROOM="/common/create-room";
+export const GET_USER_ROOMS="/common/get-users-rooms";
+export const DELETE_USER_ROOM="/common/delete-room-data";
+export const GET_USER_ROOM_MESSAGES="/common/get-messages";
+export const UPLOAD_CHAT_FILE="/common/post-chat-media";

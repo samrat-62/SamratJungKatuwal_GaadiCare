@@ -1,75 +1,22 @@
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { User, Mail, Phone, Calendar, Shield, Car, Wrench, CheckCircle, XCircle, Clock, MapPin } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Car, CheckCircle, Clock, Mail, MapPin, Phone, Shield, User, Wrench, XCircle } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const UserDetailsDialog = ({ user, open, onOpenChange }) => {
   if (!user) return null;
 
-  // Dummy recent bookings data - replace with actual data from your API
-  const recentBookings = [
-    {
-      id: "BK-001",
-      workshopName: "AutoCare Pro Workshop",
-      serviceType: "General Service",
-      vehicleDetails: "Maruti Swift, 2020",
-      bookingDate: "2024-03-15",
-      appointmentDate: "2024-03-20",
-      status: "completed",
-      amount: 2500,
-      address: "123 MG Road, Bangalore"
-    },
-    {
-      id: "BK-002",
-      workshopName: "SpeedFix Motors",
-      serviceType: "Brake Repair",
-      vehicleDetails: "Hyundai Creta, 2021",
-      bookingDate: "2024-03-10",
-      appointmentDate: "2024-03-12",
-      status: "confirmed",
-      amount: 1800,
-      address: "456 Koramangala, Bangalore"
-    },
-    {
-      id: "BK-003",
-      workshopName: "City Auto Works",
-      serviceType: "AC Service",
-      vehicleDetails: "Honda City, 2019",
-      bookingDate: "2024-03-05",
-      appointmentDate: "2024-03-08",
-      status: "in-progress",
-      amount: 3200,
-      address: "789 Indiranagar, Bangalore"
-    },
-    {
-      id: "BK-004",
-      workshopName: "Elite Service Center",
-      serviceType: "Denting & Painting",
-      vehicleDetails: "Toyota Fortuner, 2022",
-      bookingDate: "2024-03-01",
-      appointmentDate: "2024-03-03",
-      status: "cancelled",
-      amount: 5500,
-      address: "321 Whitefield, Bangalore"
-    },
-    {
-      id: "BK-005",
-      workshopName: "QuickFix Garage",
-      serviceType: "Oil Change",
-      vehicleDetails: "Tata Nexon, 2021",
-      bookingDate: "2024-02-28",
-      appointmentDate: "2024-03-02",
-      status: "completed",
-      amount: 1200,
-      address: "654 Jayanagar, Bangalore"
-    }
-  ];
+  const {bookings} = useSelector(state=>state.allBookings);
+
+  const userBookings = bookings?.filter(booking => booking.userId === user.userId || booking.userId === user._id) || [];
+  const recentBookings = userBookings.slice(0, 3);
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -89,6 +36,7 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
@@ -96,12 +44,15 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -133,7 +84,7 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Member Since</p>
-                    <p className="font-medium">{user.createdAt ? formatDate(user.createdAt) : "Unknown"}</p>
+                    <p className="font-medium">{formatDate(user.createdAt)}</p>
                   </div>
                 </div>
               </div>
@@ -152,8 +103,8 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Status</p>
-                    <Badge className={user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                      {user.isActive ? "Active" : "Banned"}
+                    <Badge className={!user.isBanned ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      {!user.isBanned ? "Active" : "Banned"}
                     </Badge>
                   </div>
                 </div>
@@ -171,14 +122,14 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                     <p className="text-xs text-gray-500">Email Address</p>
                     <p className="font-medium flex items-center gap-2">
                       <Mail className="h-3 w-3" />
-                      {user.email || "N/A"}
+                      {user.userEmail || user.email || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Phone Number</p>
                     <p className="font-medium flex items-center gap-2">
                       <Phone className="h-3 w-3" />
-                      {user.phoneNumber || "N/A"}
+                      {user.userPhone || user.phoneNumber || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -193,19 +144,19 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-gray-500">Total Bookings</p>
-                      <p className="font-medium text-lg">{recentBookings.length}</p>
+                      <p className="font-medium text-lg">{userBookings.length}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Completed</p>
                       <p className="font-medium text-lg">
-                        {recentBookings.filter(b => b.status === 'completed').length}
+                        {userBookings.filter(b => b.status === 'completed').length}
                       </p>
                     </div>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Last Booking</p>
                     <p className="font-medium text-sm">
-                      {recentBookings.length > 0 ? formatDate(recentBookings[0].bookingDate) : "No bookings yet"}
+                      {userBookings.length > 0 ? formatDate(userBookings[0].bookingDate) : "No bookings yet"}
                     </p>
                   </div>
                 </div>
@@ -213,37 +164,33 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
             </div>
           </div>
 
-          {/* Recent Bookings Section */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Wrench className="h-5 w-5" />
-                Recent Bookings ({recentBookings.length})
+                Recent Bookings (Latest 3)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recentBookings.length > 0 ? (
                   recentBookings.map((booking) => (
-                    <div key={booking.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div key={booking._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-3">
                             <div className="flex items-center gap-2">
                               <Car className="h-4 w-4 text-gray-500" />
-                              <h4 className="font-semibold text-gray-800">{booking.vehicleDetails}</h4>
+                              <h4 className="font-semibold text-gray-800">{booking.vehicleType} - {booking.vehicleNumber}</h4>
                             </div>
                             {getStatusBadge(booking.status)}
-                            <span className="text-sm font-medium text-gray-700">
-                              {formatCurrency(booking.amount)}
-                            </span>
                           </div>
                           
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Wrench className="h-4 w-4 text-gray-400" />
                               <span className="text-sm text-gray-600">
-                                <span className="font-medium">Service:</span> {booking.serviceType}
+                                <span className="font-medium">Services:</span> {booking.services?.join(", ")}
                               </span>
                             </div>
                             
@@ -255,17 +202,17 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                             
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-600 truncate">{booking.address}</span>
+                              <span className="text-sm text-gray-600 truncate">{booking.workshopAddress}</span>
                             </div>
                             
                             <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mt-2">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                <span><span className="font-medium">Booked:</span> {formatDate(booking.bookingDate)}</span>
+                                <span><span className="font-medium">Booked:</span> {formatDateTime(booking.createdAt)}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                <span><span className="font-medium">Appointment:</span> {formatDate(booking.appointmentDate)}</span>
+                                <span><span className="font-medium">Appointment:</span> {formatDate(booking.bookingDate)} - {booking.timeSlot}</span>
                               </div>
                             </div>
                           </div>
@@ -274,7 +221,7 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                         <div className="flex flex-col items-end">
                           <div className="text-xs font-medium text-gray-500 mb-1">Booking ID</div>
                           <div className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                            {booking.id}
+                            {booking.bookingId}
                           </div>
                         </div>
                       </div>
@@ -291,12 +238,11 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
             </CardContent>
           </Card>
 
-          {/* Account Information Check */}
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Account Information Check</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                {user.email ? (
+                {user.userEmail || user.email ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
                   <XCircle className="h-4 w-4 text-red-600" />
@@ -304,7 +250,7 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                 <span className="text-sm">Email Address Provided</span>
               </div>
               <div className="flex items-center gap-2">
-                {user.phoneNumber ? (
+                {user.userPhone || user.phoneNumber ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
                   <XCircle className="h-4 w-4 text-red-600" />
@@ -328,7 +274,7 @@ const UserDetailsDialog = ({ user, open, onOpenChange }) => {
                 <span className="text-sm">Vehicle Owner Account</span>
               </div>
               <div className="flex items-center gap-2">
-                {recentBookings.length > 0 ? (
+                {userBookings.length > 0 ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
                   <XCircle className="h-4 w-4 text-red-600" />

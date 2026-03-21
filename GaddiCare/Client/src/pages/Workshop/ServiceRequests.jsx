@@ -9,12 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { CREATE_ROOM } from '@/routes/serverEndpoints'
+import axiosClient from '@/services/axiosMain'
 import { Calendar as CalendarIcon, Check, ChevronLeft, ChevronRight, Clock, Eye, MapPin, MessageCircle, Phone, PlayCircle, Search, X } from 'lucide-react'
 import moment from 'moment'
 import { useContext, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 const ServiceRequests = () => {
+  const navigate = useNavigate();
   const {updateBookingStatus} = useContext(AppContext);
   const { data: user } = useSelector((state) => state.userData)
   const { bookings, loading } = useSelector((state) => state.allBookings)
@@ -26,6 +31,9 @@ const ServiceRequests = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [dateRange, setDateRange] = useState({ from: null, to: null })
   const [currentPage, setCurrentPage] = useState(1)
+  const [actionLoading, setActionLoading] = useState({})
+  const [chatCreating, setChatCreating] = useState({})
+  
   const bookingsPerPage = 6
   
   const [statusCounts, setStatusCounts] = useState({
@@ -41,6 +49,7 @@ const ServiceRequests = () => {
         booking.workshopId === user._id && 
         booking.status !== 'completed' && 
         booking.status !== 'cancelled'
+        && booking.status !== 'rejected'
       )
       
       if (dateRange.from && dateRange.to) {
@@ -90,6 +99,47 @@ const ServiceRequests = () => {
     setIsDialogOpen(true)
   }
 
+  const handleStatusUpdate = async (bookingId, status) => {
+    setActionLoading(prev => ({ ...prev, [bookingId]: true }));
+    try {
+      await updateBookingStatus(bookingId, status);
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [bookingId]: false }));
+    }
+  }
+
+  const handleCreateChatRoom = async (booking) => {
+    if (!booking.userId) {
+      toast.error("Unable to start chat. Customer information missing.");
+      return;
+    }
+
+    setChatCreating(prev => ({ ...prev, [booking._id]: true }));
+    try {
+      const response = await axiosClient.post(
+        CREATE_ROOM,
+        {
+          targetUserId: booking.userId,
+          targetUserType: "User"
+        },
+        { withCredentials: true }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        const room = response.data.room;
+       toast.success(response?.data?.message || `Chat room ${response.data.status} successfully!`);
+        navigate(`/workshopdashboard/workshopMessages?room=${room._id}`);
+      }
+    } catch (error) {
+      console.error("Error creating chat room:", error);
+      toast.error(error.response?.data?.error || "Failed to create chat room");
+    } finally {
+      setChatCreating(prev => ({ ...prev, [booking._id]: false }));
+    }
+  }
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
@@ -108,31 +158,65 @@ const ServiceRequests = () => {
   }
 
   const getActionButtons = (booking) => {
+    const isActionLoading = actionLoading[booking._id];
+    const isChatCreating = chatCreating[booking._id];
+
     switch (booking.status) {
       case 'pending':
         return (
           <div className="flex gap-2 mt-4">
             <Button 
-              onClick={() => updateBookingStatus(booking.bookingId, 'accepted')}
+              onClick={() => handleStatusUpdate(booking._id, 'accepted')}
               className="bg-green-600 hover:bg-green-700"
+              disabled={isActionLoading || isChatCreating}
             >
-              <Check className="h-4 w-4 mr-2" />
-              Accept
+              {isActionLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Accept
+                </>
+              )}
             </Button>
             <Button 
-              onClick={() => updateBookingStatus(booking.bookingId, 'rejected')}
+              onClick={() => handleStatusUpdate(booking._id, 'rejected')}
               variant="outline"
               className="border-red-600 text-red-600 hover:bg-red-50"
+              disabled={isActionLoading || isChatCreating}
             >
-              <X className="h-4 w-4 mr-2" />
-              Reject
+              {isActionLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
+                </>
+              )}
             </Button>
             <Button 
               variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={() => handleCreateChatRoom(booking)}
+              disabled={isActionLoading || isChatCreating}
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Chat
+              {isChatCreating ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat
+                </>
+              )}
             </Button>
           </div>
         )
@@ -140,18 +224,39 @@ const ServiceRequests = () => {
         return (
           <div className="flex gap-2 mt-4">
             <Button 
-              onClick={() => updateBookingStatus(booking.bookingId, 'in-progress')}
+              onClick={() => handleStatusUpdate(booking._id, 'in-progress')}
               className="bg-orange-600 hover:bg-orange-700"
+              disabled={isActionLoading || isChatCreating}
             >
-              <PlayCircle className="h-4 w-4 mr-2" />
-              Start Service
+              {isActionLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Start Service
+                </>
+              )}
             </Button>
             <Button 
               variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={() => handleCreateChatRoom(booking)}
+              disabled={isActionLoading || isChatCreating}
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Chat
+              {isChatCreating ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat
+                </>
+              )}
             </Button>
           </div>
         )
@@ -160,17 +265,38 @@ const ServiceRequests = () => {
           <div className="flex gap-2 mt-4">
             <Button 
               className="bg-green-600 hover:bg-green-700"
-              onClick={() => updateBookingStatus(booking.bookingId, 'completed')}
+              onClick={() => handleStatusUpdate(booking._id, 'completed')}
+              disabled={isActionLoading || isChatCreating}
             >
-              <Check className="h-4 w-4 mr-2" />
-              Mark Complete
+              {isActionLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Completing...
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Mark Complete
+                </>
+              )}
             </Button>
             <Button 
               variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={() => handleCreateChatRoom(booking)}
+              disabled={isActionLoading || isChatCreating}
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Chat
+              {isChatCreating ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat
+                </>
+              )}
             </Button>
           </div>
         )
@@ -180,9 +306,20 @@ const ServiceRequests = () => {
             <Button 
               variant="outline"
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={() => handleCreateChatRoom(booking)}
+              disabled={isChatCreating}
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Chat
+              {isChatCreating ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Chat
+                </>
+              )}
             </Button>
           </div>
         )
@@ -426,87 +563,93 @@ const ServiceRequests = () => {
 
     return (
       <div className="grid grid-cols-1 gap-6">
-        {bookings.map((booking) => (
-          <Card key={booking._id} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-12 w-12 border">
-                    <AvatarImage 
-                      src={booking.userImage ? `${import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'}${booking.userImage}` : undefined} 
-                      alt={booking.userName}
-                    />
-                    <AvatarFallback className="bg-orange-100 text-orange-600">
-                      {getInitials(booking.userName || 'CU')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">{booking.userName}</h3>
-                    <div className="flex items-center gap-4 mt-1">
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span className="text-sm">
-                          {moment(booking.bookingDate).format('YYYY-MM-DD')}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Clock className="h-4 w-4" />
-                        <span className="text-sm">{booking.timeSlot}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Phone className="h-4 w-4" />
-                        <span className="text-sm">{booking.userPhone}</span>
+        {bookings.map((booking) => {
+          const isActionLoading = actionLoading[booking._id];
+          const isChatCreating = chatCreating[booking._id];
+          
+          return (
+            <Card key={booking._id} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 border">
+                      <AvatarImage 
+                        src={booking.userImage ? `${import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'}${booking.userImage}` : undefined} 
+                        alt={booking.userName}
+                      />
+                      <AvatarFallback className="bg-orange-100 text-orange-600">
+                        {getInitials(booking.userName || 'CU')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{booking.userName}</h3>
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <CalendarIcon className="h-4 w-4" />
+                          <span className="text-sm">
+                            {moment(booking.bookingDate).format('YYYY-MM-DD')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm">{booking.timeSlot}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Phone className="h-4 w-4" />
+                          <span className="text-sm">{booking.userPhone}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div className="flex gap-2">
+                    {getStatusBadge(booking.status)}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDetails(booking)}
+                      className="h-8 w-8 p-0"
+                      disabled={isActionLoading || isChatCreating}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {getStatusBadge(booking.status)}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewDetails(booking)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
 
-              <div className="mb-4">
-                <p className="font-medium text-gray-900 mb-1">
-                  {booking.vehicleType} - {booking.vehicleNumber}
-                </p>
-                {booking.pickupAddress && (
-                  <div className="flex items-center gap-1 text-gray-600 mb-2">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm">{booking.pickupAddress}</span>
+                <div className="mb-4">
+                  <p className="font-medium text-gray-900 mb-1">
+                    {booking.vehicleType} - {booking.vehicleNumber}
+                  </p>
+                  {booking.pickupAddress && (
+                    <div className="flex items-center gap-1 text-gray-600 mb-2">
+                      <MapPin className="h-4 w-4" />
+                      <span className="text-sm">{booking.pickupAddress}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <p className="font-medium text-gray-700 mb-1">Services:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {booking.services && booking.services.map((service, index) => (
+                      <Badge key={index} variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                        {service}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {booking.problemDescription && (
+                  <div className="mb-4">
+                    <p className="font-medium text-gray-700 mb-1">Description:</p>
+                    <p className="text-gray-600 text-sm">{booking.problemDescription}</p>
                   </div>
                 )}
-              </div>
 
-              <div className="mb-4">
-                <p className="font-medium text-gray-700 mb-1">Services:</p>
-                <div className="flex flex-wrap gap-2">
-                  {booking.services && booking.services.map((service, index) => (
-                    <Badge key={index} variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      {service}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {booking.problemDescription && (
-                <div className="mb-4">
-                  <p className="font-medium text-gray-700 mb-1">Description:</p>
-                  <p className="text-gray-600 text-sm">{booking.problemDescription}</p>
-                </div>
-              )}
-
-              {getActionButtons(booking)}
-            </CardContent>
-          </Card>
-        ))}
+                {getActionButtons(booking)}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     )
   }
