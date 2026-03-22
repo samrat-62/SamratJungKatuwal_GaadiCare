@@ -8,13 +8,16 @@ import authRouter from './routes/authRoute.js';
 import setAuthUser from './middleware/setAuthUser.js';
 import path from 'path';
 import commonRouter from './routes/commonRoute.js';
+import setupSocket from './service/socket-service/index.js';
+import checkVehicleServiceStatus from './middleware/checkVehicleForService.js';
+import { startServiceReminderCron } from './service/node-cron/serviceReminderCron.js';
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8080;
 const CLIENT = process.env.CLIENT_URL || 'http://localhost:5173';
 const MONGO=process.env.MONGO_URL || '';
 
@@ -40,6 +43,9 @@ app.use('/api/auth', authRouter);
 app.use("/api/common",commonRouter);
 
 
-server.listen(PORT, () => {
+server.listen(PORT,async () => {
   console.log(`Server is running on port ${PORT}`);
+  await startServiceReminderCron();
 });
+
+setupSocket(server);  

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import Review from "../../models/review.js";
 import User from "../../models/user.js";
 import Workshop from "../../models/workshop.js";
+import { pushAlert } from "../../service/socket-service/index.js";
 
 export const createOrUpdateReview = async (req, res) => {
   try {
@@ -33,6 +34,8 @@ export const createOrUpdateReview = async (req, res) => {
       });
     }
 
+
+
     const existingReview = await Review.findOne({ userId, workshopId });
 
     if (existingReview) {
@@ -40,6 +43,16 @@ export const createOrUpdateReview = async (req, res) => {
       existingReview.comment = comment;
 
       await existingReview.save();
+
+      const notification = {
+        userId: workshop._id,
+        title: `Workshop Review Updated`,
+        content: `${user.userName} has updated a review with a rating of ${rating} star${rating > 1 ? "s" : ""}.`,
+        read: false,
+      };
+
+      await pushAlert(notification);
+
 
       return res.status(200).json({
         success: true,
@@ -52,13 +65,23 @@ export const createOrUpdateReview = async (req, res) => {
 
     const newReview = new Review({
       reviewId,
-      userId:user._id,
-      workshopId:workshop._id,
+      userId: user._id,
+      workshopId: workshop._id,
       rating,
       comment,
     });
 
     await newReview.save();
+
+    const notification = {
+      userId: workshop._id,
+      title: `Workshop Review Created`,
+      content: `${user.userName} has created a review with a rating of ${rating} star${rating > 1 ? "s" : ""}.`,
+      read: false,
+    };
+
+    await pushAlert(notification);
+
 
     return res.status(201).json({
       success: true,

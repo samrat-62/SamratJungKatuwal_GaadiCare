@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import BookService from "../../models/bookService.js";
 import User from "../../models/user.js";
 import Workshop from "../../models/workshop.js";
+import { pushAlert } from "../../service/socket-service/index.js";
 
 export const handleBookService = async (req, res) => {
   try {
@@ -92,6 +93,16 @@ export const handleBookService = async (req, res) => {
     });
 
     await newBooking.save();
+
+    const notification = {
+      userId: workshop._id, 
+      title: "New Service Booking",
+      content: `${user.userName} booked a service at your workshop.`,
+      read: false,
+    };
+
+    await pushAlert(notification);
+
 
     return res.status(201).json({
       success: true,

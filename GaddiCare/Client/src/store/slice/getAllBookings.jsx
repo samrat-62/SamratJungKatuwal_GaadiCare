@@ -9,7 +9,7 @@ export const fetchAllBookings = createAsyncThunk(
       const response = await axiosClient.get(GET_ALL_BOOKINGS, {
         withCredentials: true,
       });
-      console.log(response,"all bookings");
+      // console.log(response,"all bookings");
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Failed to fetch bookings");

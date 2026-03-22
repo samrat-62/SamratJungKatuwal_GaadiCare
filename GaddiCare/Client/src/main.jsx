@@ -6,6 +6,7 @@ import { RouterProvider } from 'react-router'
 import { Provider } from 'react-redux'
 import store from './store'
 import AppProvider from './components/ContextApi'
+import SocketProvider from './services/socketProvider'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>

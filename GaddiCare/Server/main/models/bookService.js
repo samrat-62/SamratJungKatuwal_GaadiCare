@@ -88,7 +88,7 @@ const bookServiceSchema = new Schema(
 
         status: {
             type: String,
-            enum: ["pending", "accepted", "in-progress", "completed", "cancelled"],
+            enum: ["pending", "accepted", "in-progress", "completed", "cancelled","rejected"],
             default: "pending",
         },
         isCancelled: {
@@ -102,6 +102,10 @@ const bookServiceSchema = new Schema(
         workshopImage:{
             type:String,
             required:false
+        },
+         serviceMessage:{
+            type: Boolean,
+            default:false
         }
     },
     { timestamps: true }

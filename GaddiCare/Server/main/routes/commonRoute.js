@@ -2,8 +2,6 @@ import { Router } from "express";
 import uploadWorkshopImg from "../service/Multer/uploadWorkshopImage.js";
 import { createWorkshop } from "../controllers/otherControllers/createWorkshop.js";
 import getUnverifiedWorkshops from "../controllers/otherControllers/getWorkshopRequest.js";
-import isAdmin from "../middleware/isAdmin.js";
-import setAuthUser from "../middleware/setAuthUser.js";
 import { updateWorkshopStatus } from "../controllers/otherControllers/updateWorkshopStatus.js";
 import getAllUsers from "../controllers/otherControllers/getAllUsers.js";
 import getAllVerifiedWorkshops from "../controllers/otherControllers/getAllVerifiedWorkshops.js";
@@ -17,6 +15,9 @@ import { uploadUserImage } from "../controllers/authControllers/handleUserImageU
 import { updateWorkshopProfile } from "../controllers/otherControllers/updateWorkshopProfile.js";
 import { updateBookingStatus } from "../controllers/otherControllers/updateBookingStatus.js";
 import { deleteBooking } from "../controllers/otherControllers/handleDeleteBooking.js";
+import ManageNotification from "../controllers/otherControllers/manageNotification.js";
+import ManageRoom from "../controllers/otherControllers/manageRoom.js";
+import uploadChatFile from "../service/Multer/uploadChatFile.js";
 
 const commonRouter= Router();
 
@@ -41,8 +42,18 @@ commonRouter.post("/workshopImage",uploadWorkshopImg.single("workshopImage"),upl
 commonRouter.patch("/update-workshop-profile",updateWorkshopProfile);
 commonRouter.patch("/update-booking-status/:bookingId",updateBookingStatus);
 commonRouter.delete("/booking/:bookingId",deleteBooking);
-commonRouter.get("/:workshopId",getWorkshopById);
 
+commonRouter.get("/all-notifications",ManageNotification.fetchUserNotifications);
+commonRouter.delete("/del-notification/:notificationId",ManageNotification.deleteNotification);
+commonRouter.delete("/del-all-notifications",ManageNotification.clearNotifications);
+commonRouter.patch("/notifications-mark-read", ManageNotification.markNotificationsSeen);
+
+commonRouter.post("/create-room",ManageRoom.openChatRoom);
+commonRouter.get("/get-users-rooms",ManageRoom.fetchUserChatRooms);
+commonRouter.get("/get-messages/:roomId", ManageRoom.fetchRoomMessages);
+commonRouter.delete("/delete-room-data/:roomId", ManageRoom.removeChatRoom);
+commonRouter.post("/post-chat-media",uploadChatFile.single("file"), ManageRoom.uploadChatFile);
+commonRouter.get("/:workshopId",getWorkshopById);
 
 export default commonRouter;
 

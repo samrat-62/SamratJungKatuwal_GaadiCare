@@ -1,4 +1,5 @@
 import BookService from "../../models/bookService.js";
+import { pushAlert } from "../../service/socket-service/index.js";
 
 export const updateBookingStatus = async (req, res) => {
   try {
@@ -11,6 +12,7 @@ export const updateBookingStatus = async (req, res) => {
       "in-progress",
       "completed",
       "cancelled",
+      "rejected"
     ];
 
     if (!type || !allowedStatuses.includes(type)) {
@@ -20,7 +22,7 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    const booking = await BookService.findOne({ bookingId });
+    const booking = await BookService.findOne({ _id:bookingId });
 
     if (!booking) {
       return res.status(404).json({
@@ -38,6 +40,24 @@ export const updateBookingStatus = async (req, res) => {
     }
 
     await booking.save();
+
+     const userNotification = {
+      userId: booking.userId,
+      title: "Booking Status Updated",
+      content: `Your booking at ${booking.workshopName} for ${booking.vehicleType} (${booking.vehicleNumber}) is now "${type}".`,
+      read: false,
+    };
+    await pushAlert(userNotification);
+
+    if (type === "cancelled") {
+      const workshopNotification = {
+        userId: booking.workshopId,
+        title: "Booking Cancelled",
+        content: `The booking by ${booking.userName} for ${booking.vehicleType} (${booking.vehicleNumber}) has been cancelled.`,
+        read: false,
+      };
+      await pushAlert(workshopNotification);
+    }
 
     return res.status(200).json({
       success: true,

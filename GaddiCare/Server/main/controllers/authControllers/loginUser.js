@@ -22,6 +22,13 @@ const handleLogin = async (req, res) => {
     if (!account) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
+     if (!account.isActive) {
+      return res.status(403).json({ message: "You are banned from the platform." });
+    }
+
+    if(account.accountVerified === false){
+      return res.status(403).json({ message: "Please wait for account verification before logging in." });
+    }
 
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
@@ -29,6 +36,7 @@ const handleLogin = async (req, res) => {
     }
 
     const token = generateAccessToken(account.userId || account.workshopId);
+
 
     return res
       .status(200)
@@ -45,7 +53,7 @@ const handleLogin = async (req, res) => {
       });
 
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 };

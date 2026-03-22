@@ -5,6 +5,7 @@ import workshopsSlice from "./slice/getAllWorkshops";
 import pendingWorkshopsSlice from "./slice/getAllWorkshopRequest";
 import bookingSlice from "./slice/getAllBookings";
 import reviewSlice from "./slice/getAllReviews";
+import alertSlice from "./slice/getNotifications";
 
 const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ const store = configureStore({
     allWorkshops: workshopsSlice,
     pendingWorkshops: pendingWorkshopsSlice,
     allBookings:bookingSlice,
-    allReviews:reviewSlice
+    allReviews:reviewSlice,
+    allNotifications:alertSlice,
   },
 });
 

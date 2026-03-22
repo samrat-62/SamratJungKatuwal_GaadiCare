@@ -1,6 +1,7 @@
 import User from "../../models/user.js";
 import Workshop from "../../models/workshop.js";
 import { v4 as uuidv4 } from "uuid";
+import { pushAlert } from "../../service/socket-service/index.js";
 
 export const createWorkshop = async (req, res) => {
   try {
@@ -70,6 +71,17 @@ export const createWorkshop = async (req, res) => {
     });
 
     await newWorkshop.save();
+
+    const admins = await User.find({ userType: "admin" });
+    for (const admin of admins) {
+      const notification = {
+        userId: admin._id,
+        title: "New Workshop Registered",
+        content: `${newWorkshop.workshopName} has registered on the platform.`,
+        read: false,
+      };
+      await pushAlert(notification);
+    }
 
     return res.status(201).json({
       success: true,
