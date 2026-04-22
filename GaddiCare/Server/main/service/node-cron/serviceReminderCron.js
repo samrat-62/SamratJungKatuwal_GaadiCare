@@ -3,7 +3,7 @@ import checkVehicleServiceStatus from "../../middleware/checkVehicleForService.j
 
 export const startServiceReminderCron = () => {
 
-  cron.schedule("* * * * * *", async () => {
+  cron.schedule("0 * * * *", async () => {
     console.log(`🚗 Automatically checking vehicles at ${new Date().toLocaleString()}`);
     
     try {
