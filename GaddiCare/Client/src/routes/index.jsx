@@ -13,7 +13,7 @@ import Profile from "@/pages/Profile";
 import Register from "@/pages/Register";
 import ResetPassword from "@/pages/ResetPassword";
 import SingleWorkshopPage from "@/pages/SingleWorkshopDetails";
-import VerifyToken from "@/pages/verifyToken";
+import VerifyToken from "@/pages/VerifyToken";
 import Workshop from "@/pages/Workshop";
 import DashboardWorkshop from "@/pages/Workshop/DashboardWorkshop";
 import ServiceHistory from "@/pages/Workshop/ServiceHistory";
