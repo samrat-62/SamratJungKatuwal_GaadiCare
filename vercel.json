@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "GaddiCare/Server/main/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "GaddiCare/Client/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "GaddiCare/Server/main/index.js" },
+    { "src": "/(.*)", "dest": "GaddiCare/Client/dist/$1" }
+  ]
+}
