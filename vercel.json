@@ -8,7 +8,7 @@
     {
       "src": "GaddiCare/Client/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": { "distDir": "GaddiCare/Client/dist" }
     }
   ],
   "routes": [
