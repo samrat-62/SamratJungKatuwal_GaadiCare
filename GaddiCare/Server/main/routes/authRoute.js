@@ -6,7 +6,7 @@ import resendVerificationCode from "../controllers/authControllers/resendVerific
 import getAuthUser from "../controllers/authControllers/getAuthUser.js";
 import { logout } from "../controllers/authControllers/logoutUser.js";
 import handleForgotPassword from "../controllers/authControllers/handelForgetPass.js";
-import verifyForgotPasswordToken from "../controllers/authControllers/verifyForgetPassToken.js";
+import verifyForgotPasswordToken from "../controllers/authControllers/VerifyForgetPassToken.js";
 import updatePassword from "../controllers/authControllers/updateNewPassword.js";
 import uploadUserImg from "../service/Multer/uploadUserImage.js";
 import { uploadUserImage } from "../controllers/authControllers/handleUserImageUpload.js";
