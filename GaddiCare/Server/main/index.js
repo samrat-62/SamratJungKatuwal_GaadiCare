@@ -36,18 +36,27 @@ const allowedOrigins = [
 connectDB(MONGO);
 app.use(
   cors({
-    origin:  function(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+    origin: function(origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost
+      if (origin.includes('localhost')) return callback(null, true);
+      
+      // Allow ALL vercel.app URLs for this project
+      if (origin.includes('samrat-jung-katuwal-gaadi-care')) return callback(null, true);
+      
+      // Allow the main domain
+      if (origin === process.env.CLIENT_URL) return callback(null, true);
+
+      callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
+
 app.use(express.static(path.resolve("./Upload")));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
