@@ -1,54 +1,25 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-const checkChatFile = (req, file, cb) => {
-  const allowedTypes = [
-    "image/png",
-    "image/jpg",
-    "image/jpeg",
-    "image/gif",
-    "image/webp",
-    "application/pdf",
-  ];
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image files and PDF documents are allowed in chat"), false);
-  }
-};
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    try {
-      const folderPath = "./Upload/chatFiles";
-
-      if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath, { recursive: true });
-      }
-
-      const dest = path.resolve(folderPath);
-      cb(null, dest);
-    } catch (error) {
-      cb(error);
-    }
-  },
-
-  filename: (req, file, cb) => {
-    const date = new Date().toISOString().split("T")[0];
-    const cleanName = file.originalname.replace(/\s+/g, "-");
-    const finalName = `${date}-${cleanName}`;
-    cb(null, finalName);
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "gaddicare/chatFiles",
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp", "pdf"],
+    resource_type: "auto",
   },
 });
 
 const uploadChatFile = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-  fileFilter: checkChatFile,
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 export default uploadChatFile;
