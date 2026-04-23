@@ -1,25 +1,20 @@
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import pkg from "multer-storage-cloudinary";
-const { CloudinaryStorage } = pkg;
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const storage = multer.memoryStorage();
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "gaddicare/userImages",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-  },
-});
+const checkImage = (req, file, cb) => {
+  const allowedImageTypes = ["image/png", "image/jpg", "image/jpeg", "image/webp"];
+  if (allowedImageTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type. Only images allowed!"), false);
+  }
+};
 
 const uploadUserImg = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: checkImage,
 });
 
 export default uploadUserImg;
