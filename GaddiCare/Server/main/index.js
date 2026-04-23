@@ -18,25 +18,25 @@ const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 8080;
-const CLIENT = process.env.CLIENT_URL || 'http://localhost:5173';
 const MONGO=process.env.MONGO_URL || '';
 
 const allowedOrigins = [
+  'http://localhost:5173',
   'https://samrat-jung-katuwal-gaadi-care.vercel.app',
   'https://samrat-jung-katuwal-gaadi-care-p173zthsn.vercel.app',
   process.env.CLIENT_URL
-];
+].filter(Boolean);
 
 connectDB(MONGO);
 app.use(
   cors({
-    origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+    origin:  function(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
