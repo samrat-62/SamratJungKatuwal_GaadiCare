@@ -1,21 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "GaddiCare/Server/main/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "GaddiCare/Client/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "GaddiCare/Server/main/index.js" },
-    { "src": "/assets/(.*)", "dest": "/GaddiCare/Client/assets/$1" },
-    { "src": "/image/(.*)", "dest": "/GaddiCare/Client/image/$1" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/GaddiCare/Client/index.html" }
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
